@@ -1,50 +1,90 @@
+import { useEffect, useState } from 'react';
+
 export default function SchoolCatalog() {
+  const [courses, setCourses] = useState([]);
+  const [filter, setFilter] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+
+  useEffect(() => {
+    fetch('/api/courses.json')
+      .then(response => response.json())
+      .then(data => setCourses(data));
+  }, []);
+
+  const filteredCourses = courses.filter((course) =>
+    course.courseNumber.toLowerCase().includes(filter.toLowerCase()) ||
+    course.courseName.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  const handleSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedCourses = [...filteredCourses].sort((a, b) => {
+    if (sortConfig.key !== null) {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      const aNum = parseFloat(aValue);
+      const bNum = parseFloat(bValue);
+
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        if (aNum < bNum) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aNum > bNum) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      }
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'ascending' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'ascending' ? 1 : -1;
+      }
+    }
+    return 0;
+  });
+
   return (
     <div className="school-catalog">
       <h1>School Catalog</h1>
-      <input type="text" placeholder="Search" />
+      <input
+        type="text"
+        placeholder="Search"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+      />
       <table>
         <thead>
           <tr>
-            <th>Trimester</th>
-            <th>Course Number</th>
-            <th>Courses Name</th>
-            <th>Semester Credits</th>
-            <th>Total Clock Hours</th>
+            <th onClick={() => handleSort('trimester')}>Trimester</th>
+            <th onClick={() => handleSort('courseNumber')}>Course Number</th>
+            <th onClick={() => handleSort('courseName')}>Courses Name</th>
+            <th onClick={() => handleSort('semesterCredits')}>Semester Credits</th>
+            <th onClick={() => handleSort('totalClockHours')}>Total Clock Hours</th>
             <th>Enroll</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>1</td>
-            <td>PP1000</td>
-            <td>Beginning Procedural Programming</td>
-            <td>2</td>
-            <td>30</td>
-            <td>
-              <button>Enroll</button>
-            </td>
-          </tr>
-          <tr>
-            <td>1</td>
-            <td>PP1100</td>
-            <td>Basic Procedural Programming</td>
-            <td>4</td>
-            <td>50</td>
-            <td>
-              <button>Enroll</button>
-            </td>
-          </tr>
-          <tr>
-            <td>1</td>
-            <td>OS1000</td>
-            <td>Fundamentals of Open Source Operating Systems</td>
-            <td>2.5</td>
-            <td>37.5</td>
-            <td>
-              <button>Enroll</button>
-            </td>
-          </tr>
+          {sortedCourses.map((course) => (
+            <tr key={course.courseNumber}>
+              <td>{course.trimester}</td>
+              <td>{course.courseNumber}</td>
+              <td>{course.courseName}</td>
+              <td>{course.semesterCredits}</td>
+              <td>{course.totalClockHours}</td>
+              <td>
+                <button>Enroll</button>
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
       <div className="pagination">
