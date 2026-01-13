@@ -1,9 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
+import { EnrolledCourseContext } from './EnrolledCourseContext';
 
 export default function SchoolCatalog() {
   const [courses, setCourses] = useState([]);
   const [filter, setFilter] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+  const [page, setPage] = useState(1);
+
+  const { enroll } = useContext(EnrolledCourseContext);
 
   useEffect(() => {
     fetch('/api/courses.json')
@@ -52,6 +56,10 @@ export default function SchoolCatalog() {
     return 0;
   });
 
+  const PAGE_SIZE = 5;
+  const startIndex = (page - 1) * PAGE_SIZE;
+  const paginatedCourses = sortedCourses.slice(startIndex, startIndex + PAGE_SIZE);
+
   return (
     <div className="school-catalog">
       <h1>School Catalog</h1>
@@ -73,7 +81,7 @@ export default function SchoolCatalog() {
           </tr>
         </thead>
         <tbody>
-          {sortedCourses.map((course) => (
+          {paginatedCourses.map((course) => (
             <tr key={course.courseNumber}>
               <td>{course.trimester}</td>
               <td>{course.courseNumber}</td>
@@ -81,15 +89,15 @@ export default function SchoolCatalog() {
               <td>{course.semesterCredits}</td>
               <td>{course.totalClockHours}</td>
               <td>
-                <button>Enroll</button>
+                <button onClick={() => enroll(course)}>Enroll</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
       <div className="pagination">
-        <button>Previous</button>
-        <button>Next</button>
+        <button onClick={() => setPage(page - 1)} disabled={page === 1}>Previous</button>
+        <button onClick={() => setPage(page + 1)} disabled={startIndex + PAGE_SIZE >= sortedCourses.length}>Next</button>
       </div>
     </div>
   );
